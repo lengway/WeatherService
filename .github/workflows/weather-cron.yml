@@ -24,5 +24,5 @@ jobs:
       - name: Run weather collector
         run: node scripts/collectWeather.js
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          MONGODB_URI: ${{ secrets.mongodb_uri }}
+          OPENWEATHER_API_KEY: ${{ secrets.open_weather_api_key }}
