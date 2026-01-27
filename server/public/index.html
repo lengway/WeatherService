@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Analytics Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input[type="date"] {
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .chart-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .metrics-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .metrics-title {
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 1200px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-card.avg .metric-value { color: #3b82f6; }
+        .metric-card.min .metric-value { color: #22c55e; }
+        .metric-card.max .metric-value { color: #ef4444; }
+        .metric-card.stddev .metric-value { color: #f59e0b; }
+        .metric-card.count .metric-value { color: #8b5cf6; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            color: #f87171;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .no-data-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .field-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .field-checkbox {
+            display: none;
+        }
+
+        .field-label {
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .field-checkbox:checked + .field-label {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        .field-label:hover {
+            border-color: #3b82f6;
+        }
+
+        .data-table {
+            margin-top: 30px;
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .unit {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Weather Analytics Platform</h1>
+            <p class="subtitle">Astana Weather Data Visualization & Analysis</p>
+        </header>
+
+        <div class="controls-panel">
+            <div class="controls-grid">
+                <div class="form-group">
+                    <label for="field">Select Field</label>
+                    <select id="field">
+                        <option value="temperature">Temperature</option>
+                        <option value="humidity">Humidity</option>
+                        <option value="pressure">Pressure</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-primary" id="loadDataBtn">Load Data</button>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
+
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h2 class="chart-title" id="chartTitle">Time Series Data</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <div class="metrics-section">
+                <h2 class="metrics-title">Statistics</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card count">
+                        <div class="metric-value" id="metricCount">-</div>
+                        <div class="metric-label">Data Points</div>
+                    </div>
+                    <div class="metric-card avg">
+                        <div class="metric-value" id="metricAvg">-</div>
+                        <div class="metric-label">Average</div>
+                    </div>
+                    <div class="metric-card min">
+                        <div class="metric-value" id="metricMin">-</div>
+                        <div class="metric-label">Minimum</div>
+                    </div>
+                    <div class="metric-card max">
+                        <div class="metric-value" id="metricMax">-</div>
+                        <div class="metric-label">Maximum</div>
+                    </div>
+                    <div class="metric-card stddev">
+                        <div class="metric-value" id="metricStdDev">-</div>
+                        <div class="metric-label">Std Deviation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-table" id="dataTable" style="display: none;">
+            <div class="table-container">
+                <h3 style="margin-bottom: 20px; color: #fff;">Recent Measurements</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="no-data" id="noData" style="display: none;">
+            <div class="no-data-icon">📊</div>
+            <h3>No Data Available</h3>
+            <p>Select filters and click "Load Data" to view measurements</p>
+        </div>
+
+        <footer>
+            <p>Weather Analytics Platform - Assignment 4</p>
+        </footer>
+    </div>
+
+    <script>
+        // Global state
+        let mainChart = null;
+        let currentData = [];
+
+        // Field units mapping
+        const fieldUnits = {
+            temperature: '°C',
+            humidity: '%',
+            pressure: 'hPa'
+        };
+
+        const fieldColors = {
+            temperature: {
+                border: '#ef4444',
+                background: 'rgba(239, 68, 68, 0.1)'
+            },
+            humidity: {
+                border: '#3b82f6',
+                background: 'rgba(59, 130, 246, 0.1)'
+            },
+            pressure: {
+                border: '#22c55e',
+                background: 'rgba(34, 197, 94, 0.1)'
+            }
+        };
+
+        // DOM Elements
+        const fieldSelect = document.getElementById('field');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const loadDataBtn = document.getElementById('loadDataBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loadingEl = document.getElementById('loading');
+        const dashboardEl = document.getElementById('dashboard');
+        const dataTableEl = document.getElementById('dataTable');
+        const noDataEl = document.getElementById('noData');
+        const errorEl = document.getElementById('errorMessage');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            endDateInput.value = formatDate(today);
+            startDateInput.value = formatDate(thirtyDaysAgo);
+
+            // Load initial data
+            loadData();
+        });
+
+        // Event listeners
+        loadDataBtn.addEventListener('click', loadData);
+        resetBtn.addEventListener('click', resetFilters);
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function showLoading() {
+            loadingEl.classList.add('active');
+            dashboardEl.style.display = 'none';
+            dataTableEl.style.display = 'none';
+            noDataEl.style.display = 'none';
+            hideError();
+        }
+
+        function hideLoading() {
+            loadingEl.classList.remove('active');
+        }
+
+        function showError(message) {
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+        }
+
+        function hideError() {
+            errorEl.classList.remove('active');
+        }
+
+        function showNoData() {
+            noDataEl.style.display = 'block';
+            dashboardEl.style.display = 'none';
+            dataTableEl.style.display = 'none';
+        }
+
+        function showDashboard() {
+            dashboardEl.style.display = 'grid';
+            dataTableEl.style.display = 'block';
+            noDataEl.style.display = 'none';
+        }
+
+        async function loadData() {
+            const field = fieldSelect.value;
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+
+            showLoading();
+
+            try {
+                // Build query params
+                const params = new URLSearchParams();
+                params.append('field', field);
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+
+                // Fetch measurements and metrics in parallel
+                const [measurementsRes, metricsRes] = await Promise.all([
+                    fetch(`/api/measurements?${params.toString()}`),
+                    fetch(`/api/measurements/metrics?${params.toString()}`)
+                ]);
+
+                hideLoading();
+
+                if (!measurementsRes.ok) {
+                    const error = await measurementsRes.json();
+                    if (measurementsRes.status === 404) {
+                        showNoData();
+                        return;
+                    }
+                    throw new Error(error.message || 'Failed to fetch data');
+                }
+
+                const measurements = await measurementsRes.json();
+                const metrics = metricsRes.ok ? await metricsRes.json() : null;
+
+                currentData = measurements;
+
+                // Update chart
+                updateChart(measurements, field);
+
+                // Update metrics
+                if (metrics) {
+                    updateMetrics(metrics, field);
+                }
+
+                // Update table
+                updateTable(measurements, field);
+
+                showDashboard();
+
+            } catch (error) {
+                hideLoading();
+                showError(error.message);
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function updateChart(data, field) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const colors = fieldColors[field];
+            const unit = fieldUnits[field];
+
+            const chartData = data.map(item => ({
+                x: new Date(item.timestamp),
+                y: item[field]
+            }));
+
+            // Destroy existing chart
+            if (mainChart) {
+                mainChart.destroy();
+            }
+
+            // Update chart title
+            document.getElementById('chartTitle').textContent = 
+                `${field.charAt(0).toUpperCase() + field.slice(1)} Over Time`;
+
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: `${field.charAt(0).toUpperCase() + field.slice(1)} (${unit})`,
+                        data: chartData,
+                        borderColor: colors.border,
+                        backgroundColor: colors.background,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colors.border,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                            titleColor: '#fff',
+                            bodyColor: '#e4e4e4',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${field}: ${context.parsed.y.toFixed(2)} ${unit}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'MMM d',
+                                    hour: 'MMM d HH:mm'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                maxRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                callback: function(value) {
+                                    return value + ' ' + unit;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMetrics(metrics, field) {
+            const unit = fieldUnits[field];
+            
+            document.getElementById('metricCount').textContent = metrics.count;
+            document.getElementById('metricAvg').textContent = `${metrics.avg} ${unit}`;
+            document.getElementById('metricMin').textContent = `${metrics.min} ${unit}`;
+            document.getElementById('metricMax').textContent = `${metrics.max} ${unit}`;
+            document.getElementById('metricStdDev').textContent = `${metrics.stdDev} ${unit}`;
+        }
+
+        function updateTable(data, field) {
+            const tbody = document.getElementById('tableBody');
+            const unit = fieldUnits[field];
+
+            // Show last 20 entries
+            const recentData = data.slice(-20).reverse();
+
+            tbody.innerHTML = recentData.map(item => {
+                const date = new Date(item.timestamp);
+                const formattedDate = date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <tr>
+                        <td>${formattedDate}</td>
+                        <td>${item[field].toFixed(2)} <span class="unit">${unit}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function resetFilters() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            fieldSelect.value = 'temperature';
+            endDateInput.value = formatDate(today);
+            startDateInput.value = formatDate(thirtyDaysAgo);
+
+            loadData();
+        }
+    </script>
+</body>
+</html>

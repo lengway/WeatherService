@@ -2,8 +2,12 @@ name: Weather Data Collector
 
 on:
   schedule:
-    - cron: "1 * * * *"
-  workflow_dispatch:
+    # Run every hour at minute 5 (e.g., 00:05, 01:05, 02:05...)
+    - cron: "5 * * * *"
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  push:
+    branches:
+      - main  # Re-enables scheduled runs after push
 
 jobs:
   collect-weather:
@@ -19,7 +23,19 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Check secrets are set
+        run: |
+          if [ -z "${{ secrets.mongodb_uri }}" ]; then
+            echo "Error: mongodb_uri secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.open_weather_api_key }}" ]; then
+            echo "Error: open_weather_api_key secret is not set"
+            exit 1
+          fi
+          echo "All secrets are configured"
 
       - name: Run weather collector
         run: node scripts/collectWeather.js
